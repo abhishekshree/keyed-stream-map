@@ -12,7 +12,24 @@ keyed-stream-map = "0.1"
 tokio-stream = "0.1"
 ```
 
-Requires Rust 1.71 or later.
+Requires Rust 1.85 or later.
+
+## Why this exists
+
+Upstream says it plainly in `stream_map.rs`:
+
+> Backed by a `Vec<(K, V)>`. Works best with a smallish number of streams as
+> all entries are scanned on insert, remove, and polling. For a large number
+> of streams, use tasks sending values on a shared `mpsc` channel.
+
+That pushes people toward a manual setup: a `HashMap` for O(1) lookup plus
+`select_all` or `FuturesUnordered` for polling. It works but the key and the
+stream live in two places. You tag each item with its key, keep both
+collections in sync by hand, and add tasks or channels to move values around.
+
+This crate keeps one map. The `Vec` still drives polling, and a `HashMap`
+from key to position handles lookups. You get `get`, `get_mut`, and fast
+`insert` and `remove` without the second collection.
 
 ## Use
 
