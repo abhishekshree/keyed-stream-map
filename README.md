@@ -1,30 +1,27 @@
 # keyed-stream-map
 
-A `tokio_stream::StreamMap` with fast access by key.
+A [`tokio_stream::StreamMap`](https://docs.rs/tokio-stream/latest/tokio_stream/struct.StreamMap.html)
+with fast access by key.
 
 If you keep many streams in a `StreamMap` and often ask "is key X here?" or
 "remove the stream for key X", those operations scan the stored streams. This
 crate keeps a hash index alongside the entries, so keyed lookups and removals
 are expected O(1). It also adds `get` and `get_mut`.
 
-The tradeoff is straightforward: polling still scans the entries, just as it
-does in `tokio-stream`. The hash index also uses extra memory, and keys must be
-`Clone` when inserted. Use this when managing streams by key is the part that
-hurts. If polling a very large number of mostly-pending streams is the problem,
-look at `FuturesUnordered` or `futures::stream::SelectAll` instead.
+The hash index uses extra memory, and keys must be `Clone` when inserted.
+Polling still scans the entries, so this helps when keyed access is the pain,
+not when polling many mostly-pending streams is the bottleneck.
 
-## Could this replace `select_all`?
+## When to use it instead of `select_all`
 
-Sometimes, depending on what your code needs. `select_all` merges streams and
-yields their items, but it does not give you a key to look up or remove a
-particular stream. You can add keys to its items with `map`, or keep a separate
-map of streams. If that bookkeeping is the awkward part, `StreamMap` may be a
-simpler fit.
+[`select_all`](https://docs.rs/futures/latest/futures/stream/struct.SelectAll.html)
+merges streams but does not let you look up or remove one by key. If your code
+has a separate map just to keep streams addressable, `StreamMap` may simplify
+that setup. It yields keys with items and is not a drop-in replacement.
 
-It is not a performance-equivalent replacement. `select_all` and
-`FuturesUnordered` can use task notifications to focus work on streams that are
-ready. This crate polls entries by scanning the map. Choose based on whether
-you need keyed control or notification-driven polling.
+Unlike [`FuturesUnordered`](https://docs.rs/futures/latest/futures/stream/struct.FuturesUnordered.html),
+this crate scans its entries when polled. Use those notification-driven
+alternatives when you need to manage many mostly-pending streams efficiently.
 
 ## Install
 
