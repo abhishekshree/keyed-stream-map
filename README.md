@@ -1,6 +1,7 @@
 # keyed-stream-map
 
 [![CI](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml/badge.svg)](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml)
+[crates.io](https://crates.io/crates/keyed-stream-map) · [docs.rs](https://docs.rs/keyed-stream-map)
 
 A [`tokio_stream::StreamMap`](https://docs.rs/tokio-stream/latest/tokio_stream/struct.StreamMap.html)
 with fast access by key.
