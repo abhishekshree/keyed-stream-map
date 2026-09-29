@@ -16,10 +16,15 @@ exclude = ["/.github/**", "/CONTRIBUTING.md", "/Cargo.lock"]
 futures-core = "0.3"
 
 [dev-dependencies]
+criterion = "0.7"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 tokio-test = "0.4"
 futures = "0.3"
+
+[[bench]]
+name = "stream_map"
+harness = false
 
 [profile.release]
 opt-level = 3

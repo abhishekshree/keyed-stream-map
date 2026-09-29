@@ -1,7 +1,10 @@
 # keyed-stream-map
 
-[![CI](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml/badge.svg)](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml)
-[crates.io](https://crates.io/crates/keyed-stream-map) · [docs.rs](https://docs.rs/keyed-stream-map)
+[![CI](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml?query=branch%3Amain)
+[![Crates.io](https://img.shields.io/crates/v/keyed-stream-map.svg)](https://crates.io/crates/keyed-stream-map)
+[![Documentation](https://docs.rs/keyed-stream-map/badge.svg)](https://docs.rs/keyed-stream-map)
+[![Rust version](https://img.shields.io/crates/msrv/keyed-stream-map.svg)](https://crates.io/crates/keyed-stream-map)
+[![License](https://img.shields.io/crates/l/keyed-stream-map.svg)](https://github.com/abhishekshree/keyed-stream-map/blob/main/LICENSE)
 
 A [`tokio_stream::StreamMap`](https://docs.rs/tokio-stream/latest/tokio_stream/struct.StreamMap.html)
 with fast access by key.
@@ -76,13 +79,17 @@ differences to know about:
 
 ## Performance
 
-The example below compares basic keyed operations with `tokio-stream` on your
-machine. It is a quick timing demo, not a benchmark suite. Results depend on
-the workload, key type, allocator, and hardware. Polling still scans entries.
+Criterion benchmarks compare insertion, keyed lookups, and removal against
+`tokio-stream` at several collection sizes. Setup is outside the timed portion
+for lookup and removal. Results depend on the workload, key type, allocator,
+and hardware; polling still scans entries.
 
 ```sh
-cargo run --release --example many_streams -- 20000
+cargo bench --bench stream_map
 ```
+
+Criterion writes reports under `target/criterion/`. Treat them as local
+measurements, not a promise that one implementation is faster for every use.
 
 ## Maintenance
 
