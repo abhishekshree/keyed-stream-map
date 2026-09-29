@@ -1,7 +1,7 @@
-//! keyed-stream-map: a `StreamMap` that looks up keys in constant time.
+//! keyed-stream-map: a `StreamMap` with expected constant-time key lookups.
 //!
-//! Same polling behavior as `tokio_stream::StreamMap`, plus `get` and `get_mut`.
-//! Swap the import and keep the rest of your code.
+//! Poll streams with keys attached to their items, with expected constant-time
+//! access to the stream for a given key.
 
 mod rand;
 mod stream_map;

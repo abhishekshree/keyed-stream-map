@@ -1,8 +1,30 @@
 # keyed-stream-map
 
-A `StreamMap` with fast key lookups. Same polling as `tokio-stream`, no linear scan on `insert`, `remove`, or `contains_key`.
+A `tokio_stream::StreamMap` with fast access by key.
 
-`tokio-stream::StreamMap` stores entries in a `Vec` and scans it for every keyed op. That is fine for a handful of streams and slow past a few hundred. This crate keeps the `Vec` for polling and adds a `HashMap` from key to position, so keyed ops stay flat as the map grows.
+If you keep many streams in a `StreamMap` and often ask "is key X here?" or
+"remove the stream for key X", those operations scan the stored streams. This
+crate keeps a hash index alongside the entries, so keyed lookups and removals
+are expected O(1). It also adds `get` and `get_mut`.
+
+The tradeoff is straightforward: polling still scans the entries, just as it
+does in `tokio-stream`. The hash index also uses extra memory, and keys must be
+`Clone` when inserted. Use this when managing streams by key is the part that
+hurts. If polling a very large number of mostly-pending streams is the problem,
+look at `FuturesUnordered` or `futures::stream::SelectAll` instead.
+
+## Could this replace `select_all`?
+
+Sometimes, depending on what your code needs. `select_all` merges streams and
+yields their items, but it does not give you a key to look up or remove a
+particular stream. You can add keys to its items with `map`, or keep a separate
+map of streams. If that bookkeeping is the awkward part, `StreamMap` may be a
+simpler fit.
+
+It is not a performance-equivalent replacement. `select_all` and
+`FuturesUnordered` can use task notifications to focus work on streams that are
+ready. This crate polls entries by scanning the map. Choose based on whether
+you need keyed control or notification-driven polling.
 
 ## Install
 
@@ -14,26 +36,7 @@ tokio-stream = "0.1"
 
 Requires Rust 1.85 or later.
 
-## Why this exists
-
-Upstream says it plainly in `stream_map.rs`:
-
-> Backed by a `Vec<(K, V)>`. Works best with a smallish number of streams as
-> all entries are scanned on insert, remove, and polling. For a large number
-> of streams, use tasks sending values on a shared `mpsc` channel.
-
-That pushes people toward a manual setup: a `HashMap` for O(1) lookup plus
-`select_all` or `FuturesUnordered` for polling. It works but the key and the
-stream live in two places. You tag each item with its key, keep both
-collections in sync by hand, and add tasks or channels to move values around.
-
-This crate keeps one map. The `Vec` still drives polling, and a `HashMap`
-from key to position handles lookups. You get `get`, `get_mut`, and fast
-`insert` and `remove` without the second collection.
-
-## Use
-
-Swap the import. The rest stays the same.
+## Example
 
 ```rust
 use keyed_stream_map::StreamMap;
@@ -41,40 +44,53 @@ use tokio_stream::{self as stream, StreamExt};
 
 #[tokio::main]
 async fn main() {
-    let mut map = StreamMap::new();
-    map.insert("a", stream::iter(vec![1, 2]));
-    map.insert("b", stream::iter(vec![3]));
+    let mut streams = StreamMap::new();
+    streams.insert("orders", stream::iter(vec![1, 2]));
+    streams.insert("alerts", stream::iter(vec![3]));
 
-    // New here: direct access by key.
-    if let Some(s) = map.get(&"a") {
-        println!("a holds {} items", s.size_hint().0);
+    if let Some(order_stream) = streams.get("orders") {
+        println!(
+            "orders stream has at least {} items",
+            order_stream.size_hint().0
+        );
     }
 
-    while let Some((key, val)) = map.next().await {
-        println!("{key}: {val}");
+    while let Some((key, item)) = streams.next().await {
+        println!("{key}: {item}");
     }
 }
 ```
 
-## What changed from tokio-stream
+## Compared with `tokio-stream`
 
-Polling, fairness, `next_many`, `FromIterator`, and `Extend` behave the same. Two additions:
+The stream polling API and `next_many` follow `tokio-stream`. This crate adds
+`get` and `get_mut`, and uses a hash index for keyed operations. There are a few
+differences to know about:
 
-* `get` and `get_mut` for direct access by key.
-* `Extend` and `FromIterator` replace duplicates instead of stacking them.
+- `insert`, `Extend`, and `FromIterator` require keys to implement `Clone`.
+- `Extend` replaces an existing stream when a key repeats. Upstream `Extend`
+  can store duplicate keys.
+- Replacing a key keeps its original entry position and stored key value.
+- `iter_mut()` yields `(&K, &mut V)`. You can edit a stream through the
+  iterator, but not its key, because keys are part of the index.
 
-One bound is stricter: keys need `Clone` on `insert` because the index keeps a copy. In practice keys are `u32`, `String`, or similar, so this rarely matters. Polling already required `Clone`.
+## Performance
 
-## Perf
-
-Run the included example with 20k pending streams:
+The example below compares basic keyed operations with `tokio-stream` on your
+machine. It is a quick timing demo, not a benchmark suite. Results depend on
+the workload, key type, allocator, and hardware. Polling still scans entries.
 
 ```sh
 cargo run --release --example many_streams -- 20000
 ```
 
-On a typical laptop `contains_key` and `remove` go from seconds to milliseconds. The gap grows with `n`. Polling speed is unchanged.
+## Maintenance
+
+This crate is a stopgap. It should become obsolete the day `tokio-stream`
+releases a `StreamMap` with indexed keyed operations. Until then, feel free to
+use it if fast keyed access is what you need and scan-based polling fits your
+workload.
 
 ## License
 
-MIT. See LICENSE.
+MIT. See [LICENSE](LICENSE).

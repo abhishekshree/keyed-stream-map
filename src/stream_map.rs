@@ -9,7 +9,8 @@ use std::task::{Context, Poll, ready};
 /// Merge many streams, tagged by key.
 ///
 /// Yields `(key, item)` in arrival order. Insert and remove at any time.
-/// Polling starts at a random entry so no stream starves the rest.
+/// Polling starts at a random entry to reduce fixed-order bias. This does not
+/// guarantee a maximum wait time for any stream.
 ///
 /// Unlike `tokio_stream::StreamMap`, keyed ops are `O(1)` via a hash index.
 /// Polling still scans entries, same as upstream.
@@ -68,9 +69,11 @@ impl<K, V> StreamMap<K, V> {
         self.entries.iter()
     }
 
-    /// Iterate mutably over `(key, stream)` pairs.
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (K, V)> {
-        self.entries.iter_mut()
+    /// Iterate over keys and mutable references to their streams.
+    ///
+    /// Keys are immutable because the map keeps a separate index of them.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.entries.iter_mut().map(|(key, stream)| (&*key, stream))
     }
 
     /// All keys.

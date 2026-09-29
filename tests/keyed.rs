@@ -22,6 +22,23 @@ fn get_mut_sees_same_entry() {
     assert!(map.contains_key(&7u32));
 }
 
+// iter_mut allows stream changes without allowing keys to drift from the index.
+#[tokio::test]
+async fn iter_mut_keeps_keys_indexed() {
+    let mut map = StreamMap::new();
+    map.insert("a", tokio_stream::iter(vec![1]));
+    map.insert("b", tokio_stream::iter(vec![2]));
+
+    for (key, stream) in map.iter_mut() {
+        assert!(*key == "a" || *key == "b");
+        assert!(stream.next().await.is_some());
+    }
+
+    assert!(map.contains_key("a"));
+    assert!(map.contains_key("b"));
+    assert_eq!(map.len(), 2);
+}
+
 // Borrowed lookup works: String keys, &str queries.
 #[test]
 fn borrowed_key_lookup() {
