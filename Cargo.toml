@@ -6,9 +6,11 @@ rust-version = "1.85"
 license = "MIT"
 description = "Keyed StreamMap with expected O(1) lookup and removal."
 repository = "https://github.com/abhishekshree/keyed-stream-map"
+documentation = "https://docs.rs/keyed-stream-map"
 keywords = ["stream", "async", "tokio", "map", "merge"]
 categories = ["asynchronous", "data-structures"]
 readme = "README.md"
+exclude = ["/.github/**", "/CONTRIBUTING.md", "/Cargo.lock"]
 
 [dependencies]
 futures-core = "0.3"

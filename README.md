@@ -1,12 +1,14 @@
 # keyed-stream-map
 
+[![CI](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml/badge.svg)](https://github.com/abhishekshree/keyed-stream-map/actions/workflows/ci.yml)
+
 A [`tokio_stream::StreamMap`](https://docs.rs/tokio-stream/latest/tokio_stream/struct.StreamMap.html)
 with fast access by key.
 
-If you keep many streams in a `StreamMap` and often ask "is key X here?" or
-"remove the stream for key X", those operations scan the stored streams. This
-crate keeps a hash index alongside the entries, so keyed lookups and removals
-are expected O(1). It also adds `get` and `get_mut`.
+The upstream `tokio-stream::StreamMap` currently stores its entries in a `Vec`,
+so asking "is key X here?" or removing the stream for key X scans that list.
+This crate keeps a hash index alongside the entries, making keyed lookups and
+removals expected O(1). It also adds `get` and `get_mut`.
 
 The hash index uses extra memory, and keys must be `Clone` when inserted.
 Polling still scans the entries, so this helps when keyed access is the pain,
