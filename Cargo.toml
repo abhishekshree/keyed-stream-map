@@ -1,0 +1,24 @@
+[package]
+name = "keyed-stream-map"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Drop-in StreamMap with O(1) keyed ops. Same API as tokio-stream plus get/get_mut."
+repository = "https://github.com/abhishekshree/keyed-stream-map"
+keywords = ["stream", "async", "tokio", "map", "merge"]
+categories = ["asynchronous", "data-structures"]
+readme = "README.md"
+
+[dependencies]
+futures-core = "0.3"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tokio-test = "0.4"
+futures = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
